@@ -124,4 +124,15 @@ WCStatusButton #status[checked=true] {
 WCStatusButton #text[checked=true] {
 }
 
+WCMessageBoxTimer #image {
+    border: 2px solid #272b30;
+}
 
+WCMessageBoxTimer #message {
+    font-size: 18px;
+    color: #272b30;
+}
+
+WCMessageBoxTimer #timer {
+    font-size: 13px;
+}
