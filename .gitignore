@@ -22,6 +22,6 @@ cmd.exe
 win.py
 win.pyw
 engine/desktop/
-style/
 wc
 *.wc
+/__pycache__/
