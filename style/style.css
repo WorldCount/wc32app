@@ -136,3 +136,13 @@ WCMessageBoxTimer #message {
 WCMessageBoxTimer #timer {
     font-size: 13px;
 }
+
+WCToolTipMessages #title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+WCToolTipMessages #text {
+    color: #ffffff;
+}

@@ -14,10 +14,20 @@ __python_version__ = "3"
 
 import os
 import sys
-from PyQt5.QtWidgets import (QDialog, QLabel, QHBoxLayout, QVBoxLayout)
-from PyQt5.QtCore import (Qt, QTimer)
-from PyQt5.QtGui import (QPixmap)
+from PyQt5.QtWidgets import (QDialog, QLabel, QHBoxLayout, QVBoxLayout, QWidget)
+from PyQt5.QtWidgets import (QApplication, QDesktopWidget)
+from PyQt5.QtCore import (Qt, QTimer, QSize)
+from PyQt5.QtGui import (QPixmap, QPalette, QBrush)
+from PyQt5.QtMultimedia import QSound
 from .wcbuttons import WCPushButton
+
+
+# Виды иконок для WCToolTipMessages
+_ERROR = 1
+_SUCCESS = 2
+_WARN = 3
+_INFO = 4
+_WORK = 5
 
 
 # Класс: сообщение с закрытием по таймеру
@@ -56,8 +66,9 @@ class WCMessageBoxTimer(QDialog):
 
     # Конструктор: компоненты виджета
     def _init_widget(self):
-        self._hbox = QHBoxLayout()
-        self._vbox = QVBoxLayout()
+        # Слои
+        hbox = QHBoxLayout()
+        vbox = QVBoxLayout()
         # Картинка
         self._pict = QPixmap(os.path.join(self._path, 'style/image', 'oops.png'))
         self._image = QLabel()
@@ -79,12 +90,12 @@ class WCMessageBoxTimer(QDialog):
         self._btn_ok.setFixedSize(100, 30)
 
         # Расскидываем по слоям
-        self._vbox.addWidget(self._image)
-        self._vbox.addWidget(self._text)
-        self._vbox.addWidget(self._timer_text)
-        self._hbox.addWidget(self._btn_ok)
-        self._vbox.addLayout(self._hbox)
-        self.setLayout(self._vbox)
+        vbox.addWidget(self._image)
+        vbox.addWidget(self._text)
+        vbox.addWidget(self._timer_text)
+        hbox.addWidget(self._btn_ok)
+        vbox.addLayout(hbox)
+        self.setLayout(vbox)
 
     # Конструктор: слушатели
     def _init_connect(self):
@@ -109,3 +120,175 @@ class WCMessageBoxTimer(QDialog):
 
         if self._seconds == 0:
             self.close()
+
+
+# Класс: всплывающее сообщение в виде тултипа
+class WCToolTipMessages(QWidget):
+
+    """
+    Класс всплывающего сообщения в виде тултипа на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/04/12
+    """
+
+    # Конструктор
+    def __init__(self, parent=None):
+        super(WCToolTipMessages, self).__init__(parent, Qt.FramelessWindowHint)
+        self._parent = parent
+        self._path = os.path.dirname(__file__)
+        # Таймер
+        self._timer = QTimer()
+        # Секунд до закрытия
+        self._seconds = 10
+        # Смещение виджета в сторону от экрана
+        self._offset = 2
+        # Инициализация виджетов
+        self._init_ui()
+        self._init_object()
+        self._init_widget()
+        self._init_connect()
+
+    # Конструктор: настройки виджета
+    def _init_ui(self):
+        width, height = 230, 130
+        # Делаем рассчет где расположить виджет
+        screen = QDesktopWidget().screenGeometry()
+        desktop = QApplication.desktop()
+        taskbar_height = desktop.screenGeometry().height() - desktop.availableGeometry().height()
+        self.move(screen.width() - width - self._offset, screen.height() - height - taskbar_height - self._offset)
+        self.setFixedSize(width, height)
+        # Делаем виджет прозрачным
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+
+    # Конструктор: инициализация объектов
+    def _init_object(self):
+        self._icon_size = QSize(24, 24)
+        # Буфер обмена
+        self._clipboard = QApplication.clipboard()
+        # Звуковое уведомление
+        sound_file = os.path.join(self._path, 'style/sound', 'notify.wav')
+        self._sound = QSound(sound_file)
+        # Иконки
+        self._icon_work = QPixmap(os.path.join(self._path, 'style/icon', 'work.png'))
+        self._icon_success = QPixmap(os.path.join(self._path, 'style/icon', 'success.png'))
+        self._icon_info = QPixmap(os.path.join(self._path, 'style/icon', 'info.png'))
+        self._icon_warn = QPixmap(os.path.join(self._path, 'style/icon', 'warning.png'))
+        self._icon_error = QPixmap(os.path.join(self._path, 'style/icon', 'error.png'))
+
+    # Конструктор: компоненты виджета
+    def _init_widget(self):
+        # Слои
+        vbox = QVBoxLayout()
+        vbox_widget = QVBoxLayout()
+        vbox_widget.setSpacing(0)
+        hbox = QHBoxLayout()
+        hbox.setSpacing(7)
+        # Фон
+        image = QPixmap(os.path.join(self._path, 'style/image', 'background.png'))
+        background = QPalette()
+        background.setBrush(QPalette.Window, QBrush(QPixmap(image)))
+        # Иконка
+        self._icon = QLabel('')
+        self._icon.setFixedSize(self._icon_size)
+        self._icon.setPixmap(self._icon_work)
+        # Заголовок
+        self._title = QLabel('')
+        self._title.setObjectName('title')
+        self._title.setTextFormat(Qt.RichText)
+        self._title.setFixedSize(172, 24)
+        self._title.setAlignment(Qt.AlignVCenter)
+        # Сообщение
+        self._text = QLabel('')
+        self._text.setObjectName('text')
+        self._text.setTextFormat(Qt.RichText)
+        self._text.setTextInteractionFlags(Qt.LinksAccessibleByMouse | Qt.TextSelectableByMouse)
+        self._text.setFixedSize(202, 70)
+        self._text.setAlignment(Qt.AlignLeft)
+        # Тело
+        self._body = QWidget()
+        self._body.setAutoFillBackground(True)
+        self._body.setFixedSize(220, 130)
+        self._body.setPalette(background)
+
+        # Расскидываем по слоям
+        hbox.addWidget(self._icon)
+        hbox.addWidget(self._title)
+        hbox.addStretch()
+        vbox_widget.addLayout(hbox)
+        vbox_widget.addStretch()
+        vbox_widget.addWidget(self._text)
+        vbox_widget.addStretch()
+        self._body.setLayout(vbox_widget)
+        vbox.addWidget(self._body)
+        self.setLayout(vbox)
+
+    # Конструктор: слушатели
+    def _init_connect(self):
+        self._timer.timeout.connect(self.timeout)
+        self._text.mousePressEvent = self.text_click
+
+    # Метод: запускает таймер и отображает окно
+    def show_timer(self, title, text, seconds=5, play_sound=True, icon=_WORK):
+        # Выбираем иконку
+        self._icon.setPixmap(self.get_icon(icon))
+        # Устанавливаем время отображения окна
+        if seconds:
+            self._seconds = seconds
+        else:
+            self._seconds = 10
+        # Устанавливаем заголовок
+        if title:
+            self.set_title(title)
+        # Устанавливаем текст
+        if text:
+            self.set_text(text)
+        # Запускаем таймер
+        self._timer.start(1000)
+        # Проигрываем звук
+        if play_sound:
+            self._sound.play()
+        # Отображаем окно
+        self.show()
+
+    # Метод: выбирает иконку
+    def get_icon(self, icon):
+        if icon == _WARN:
+            icon = self._icon_warn
+        elif icon == _INFO:
+            icon = self._icon_info
+        elif icon == _ERROR:
+            icon = self._icon_error
+        elif icon == _SUCCESS:
+            icon = self._icon_success
+        else:
+            icon = self._icon_work
+        return icon
+
+    # Метод: устанавливает заголовок
+    def set_title(self, text):
+        if text:
+            self._title.setText(text)
+
+    # Метод: устанавливает текст
+    def set_text(self, text):
+        if text:
+            self._text.setText(text)
+
+    # Обработчик: обработка таймера
+    def timeout(self):
+        self._seconds -= 1
+        if self._seconds == 0:
+            self.hide()
+
+    # Обработчик: двойной клик по окну
+    def text_click(self, event):
+        text = self._text.text().replace('<br>', '\n').replace('<b>', '').replace('</b>', '')
+        self._clipboard.setText(text)
+        self.hide()
+
+    # Обработчик: клик по окну
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.text_click(event)
+        return QWidget.mousePressEvent(self, event)
