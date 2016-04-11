@@ -4,3 +4,124 @@
     line-height: 1.42857143;
     color: #333;
 }
+
+WCPushButton, WCPushButton:hover, WCPushButton:pressed {
+    color: #262626;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 400;
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    line-height: 1.42857143;
+    text-align: center;
+    margin-bottom: 0;
+    padding: 6px 12px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+WCPushButton:hover {
+    color: #ffffff;
+    background-color: #272b30;
+    border: 1px solid #272b30;
+}
+
+WCPushButton:checked {
+    color: #ffffff;
+    background-color: #3a3f44;
+    border: 1px solid #272b30;
+}
+
+WCPushButton:pressed {
+    color: #ffffff;
+    background-color: #3a3f44;
+    border: 1px solid #272b30;
+}
+
+WCPushButton:disabled {
+    background-color: #eaeaea;
+    color: #bebebe;
+    border-color: #cccccc;
+}
+
+WCStatusButton, WCStatusButton[checked=false] {
+    color: #eeeeee;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 400;
+    border: 1px solid #272b30;
+    background-color: #272b30;
+    line-height: 1.42857143;
+    text-align: center;
+    margin-bottom: 0;
+    padding: 2px 2px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+WCStatusButton:hover, WCStatusButton[checked=true] {
+    color: #ffffff;
+    background-color: #3a3f44;
+    border: 1px solid #272b30;
+}
+
+WCStatusButton[pressed=true] {
+    color: #262626;
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+}
+
+WCStatusButton #text {
+    color: #eeeeee;
+}
+
+WCStatusButton #text[pressed=true] {
+    color: #262626;
+}
+
+WCStatusButton #status {
+    background-color: dimgray;
+    border: 1px solid #cccccc;
+}
+
+WCStatusButton #status[state='normal'] {
+    background-color: dimgray;
+    border: 1px solid #cccccc;
+}
+
+WCStatusButton #status[state='on'] {
+    background-color: #4e9c4e;
+    border: 1px solid #cccccc;
+}
+
+WCStatusButton #status[state='off'] {
+    background-color: #b22d2d;
+    border: 1px solid #cccccc;
+}
+
+WCStatusButton #status[state='wait'] {
+    background-color: #e19317;
+    border: 1px solid #cccccc;
+}
+
+WCStatusButton #status[select=true] {
+    border: 1px solid #cccccc;
+}
+
+WCStatusButton #status[pressed=true] {
+    border: 1px solid #3a3f44;
+}
+
+WCStatusButton:disabled, WCStatusButton #text:disabled{
+    background-color: #eaeaea;
+    color: #bebebe;
+    border-color: #cccccc;
+}
+
+WCStatusButton #status[checked=true] {
+}
+
+WCStatusButton #text[checked=true] {
+}
+
+
