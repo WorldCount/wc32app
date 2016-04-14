@@ -78,6 +78,7 @@ class WCProgressBar(QProgressBar):
         self._text_visible = text_visible
         self._flag = False
         self._half = 0
+        self._active_half = False
         self._style = self.styleSheet()
         # Инициализация
         self._init_ui()
@@ -86,7 +87,7 @@ class WCProgressBar(QProgressBar):
 
     # Конструктор: настройки виджета
     def _init_ui(self):
-        self.setMinimum(1)
+        self.setMinimum(0)
         self.set_maximum(self._total)
         self.setAlignment(Qt.AlignCenter)
         self.setTextVisible(self._text_visible)
@@ -113,7 +114,7 @@ class WCProgressBar(QProgressBar):
 
     # Метод: запускает бесконечный прогресс
     def run(self):
-        self._timer.start(10)
+        self._timer.start(50)
 
     # Метод: останавливает бесконечный прогресс
     def stop(self):
@@ -122,19 +123,29 @@ class WCProgressBar(QProgressBar):
         self.setInvertedAppearance(False)
         self._flag = True
 
+    # Метод: устанавливает значение
+    def set_value(self, value):
+        if type(value) == int:
+            max_value = self.maximum()
+
+            if not self._active_half and value >= self._half:
+                self.setProperty('half', True)
+                self.reload_style()
+                self._active_half = True
+
+            if value >= max_value:
+                self.setProperty('half', False)
+                self.reload_style()
+                self._active_half = False
+
+            self.setValue(value)
+
     # Обработчик: работа прогресса
     def _progress_run(self):
         current_value = self.value()
         max_value = self.maximum()
 
-        if current_value == self._half:
-            self.setProperty('half', True)
-            self.reload_style()
-
         if current_value == max_value:
-            self.setProperty('half', False)
-            self.reload_style()
-
             if self._flag:
                 self.setInvertedAppearance(True)
             else:
@@ -144,4 +155,4 @@ class WCProgressBar(QProgressBar):
             current_value = 0
 
         if current_value < max_value:
-            self.setValue(current_value + 1)
+            self.set_value(current_value + 1)
