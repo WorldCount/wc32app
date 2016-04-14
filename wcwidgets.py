@@ -12,9 +12,9 @@ __copyright__ = "Copyright 2016, Scr1pt1k.Ru"
 __python_version__ = ""
 
 
-from PyQt5.QtWidgets import QWidget
-from PyQt5.QtGui import (QPainter, QPen)
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QWidget, QProgressBar)
+from PyQt5.QtGui import (QPainter, QPen, QColor, QPalette)
+from PyQt5.QtCore import (Qt, QTimer)
 
 
 # Класс: пример шрифта
@@ -58,3 +58,90 @@ class WCFontExample(QWidget):
         painter.begin(self)
         self.draw(event, painter)
         painter.end()
+
+
+# Класс: прогрессбар
+class WCProgressBar(QProgressBar):
+
+    """
+    Класс прогрессбара на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/04/14
+    """
+
+    # Конструктор
+    def __init__(self, parent=None, total=100, text_visible=True):
+        super(WCProgressBar, self).__init__(parent)
+        self._parent = parent
+        self._total = total
+        self._text_visible = text_visible
+        self._flag = False
+        self._half = 0
+        self._style = self.styleSheet()
+        # Инициализация
+        self._init_ui()
+        self._init_widget()
+        self._init_connect()
+
+    # Конструктор: настройки виджета
+    def _init_ui(self):
+        self.setMinimum(1)
+        self.set_maximum(self._total)
+        self.setAlignment(Qt.AlignCenter)
+        self.setTextVisible(self._text_visible)
+
+    # Конструктор: компоненты виджета
+    def _init_widget(self):
+        self._flag = True
+        self._timer = QTimer()
+
+    # Конструктор: слушатели
+    def _init_connect(self):
+        self._timer.timeout.connect(self._progress_run)
+
+    # Метод: устанавливает максимальное значение
+    def set_maximum(self, value):
+        if type(value) == int:
+            self.setMaximum(value)
+            self._half = value / 2
+
+    # Метод: перезагружает стили статуса
+    def reload_style(self):
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+    # Метод: запускает бесконечный прогресс
+    def run(self):
+        self._timer.start(10)
+
+    # Метод: останавливает бесконечный прогресс
+    def stop(self):
+        self._timer.stop()
+        self.setValue(self.maximum())
+        self.setInvertedAppearance(False)
+        self._flag = True
+
+    # Обработчик: работа прогресса
+    def _progress_run(self):
+        current_value = self.value()
+        max_value = self.maximum()
+
+        if current_value == self._half:
+            self.setProperty('half', True)
+            self.reload_style()
+
+        if current_value == max_value:
+            self.setProperty('half', False)
+            self.reload_style()
+
+            if self._flag:
+                self.setInvertedAppearance(True)
+            else:
+                self.setInvertedAppearance(False)
+
+            self._flag = not self._flag
+            current_value = 0
+
+        if current_value < max_value:
+            self.setValue(current_value + 1)

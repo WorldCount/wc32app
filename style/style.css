@@ -54,7 +54,7 @@ WCStatusButton, WCStatusButton[checked=false] {
     line-height: 1.42857143;
     text-align: center;
     margin-bottom: 0;
-    padding: 2px 2px;
+    padding: 2px 4px;
     white-space: nowrap;
     vertical-align: middle;
 }
@@ -169,4 +169,22 @@ WCLineEdit, WCLineEdit:disabled {
 WCLineEdit:disabled {
     background-color: #e6e6e6;
     color: gray;
+}
+
+WCProgressBar {
+    color: #3a3f44;
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+    margin: 1px;
+    border-radius: 2px;
+}
+
+WCProgressBar::chunk {
+    background-color: #3a3f44;
+    margin: 1px;
+    border-radius: 2px;
+}
+
+WCProgressBar[half=true] {
+    color: #cccccc;
 }
