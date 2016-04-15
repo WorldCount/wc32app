@@ -22,6 +22,7 @@ class WCClearExtend(object):
     @date 2016/04/15
     """
 
+    # Конструктор
     def __init__(self):
         # Имя расширения
         self.name = 'undefined'
