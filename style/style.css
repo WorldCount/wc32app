@@ -147,7 +147,7 @@ WCToolTipMessages #text {
     color: #ffffff;
 }
 
-WCLineEdit, WCLineEdit:disabled {
+WCLineEdit, WCLineEdit:disabled, WCCommandLine, WCDisplay, WCLabel {
     text-transform: none;
     text-indent: 0;
     text-align: start;
@@ -166,7 +166,7 @@ WCLineEdit, WCLineEdit:disabled {
     vertical-align: middle;
 }
 
-WCLineEdit:disabled {
+WCLineEdit:disabled, WCCommandLine:disabled, WCDisplay:disabled, WCLabel:disabled {
     background-color: #e6e6e6;
     color: gray;
 }
@@ -187,4 +187,33 @@ WCProgressBar::chunk {
 
 WCProgressBar[half=true] {
     color: #cccccc;
+}
+
+WCConsole WCCommandLine {
+    border-top: 0;
+}
+
+WCFlagUserKeyboard {
+    text-transform: none;
+    text-indent: 0;
+    text-align: start;
+    border: 1px solid #cccccc;
+    line-height: 1.42857143;
+    color: #555555;
+    background-color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 400;
+    height: 34px;
+    width: 100%;
+    margin-bottom: 0;
+    padding: 6px 6px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+WCConsole WCFlagUserKeyboard {
+    border-left: none;
+    border-right: none;
+    border-top: none;
 }

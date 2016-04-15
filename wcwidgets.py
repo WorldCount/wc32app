@@ -12,9 +12,61 @@ __copyright__ = "Copyright 2016, Scr1pt1k.Ru"
 __python_version__ = ""
 
 
-from PyQt5.QtWidgets import (QWidget, QProgressBar)
-from PyQt5.QtGui import (QPainter, QPen, QColor, QPalette)
+import win32api
+from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel)
+from PyQt5.QtGui import (QPainter, QPen)
 from PyQt5.QtCore import (Qt, QTimer)
+
+
+# Класс: надпись
+class WCLabel(QLabel):
+
+    """
+    Класс надписи на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/04/15
+    """
+
+    # Конструктор
+    def __init__(self, *args):
+        super(WCLabel, self).__init__(*args)
+
+
+# Класс: флаг с раскладкой клавиатуры
+class WCFlagUserKeyboard(QLabel):
+
+    """
+    Класс флага с раскладкой клавиатуры на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/04/15
+    """
+
+    # Конструктор
+    def __init__(self, *args):
+        super(WCFlagUserKeyboard, self).__init__(*args)
+        self.lang = win32api.GetKeyboardLayout()
+        # Инициализация
+        self._init_ui()
+
+    # Конструктор: настройки виджета
+    def _init_ui(self):
+        self.setFixedSize(32, 32)
+        self.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        self.setText(self.get_flag())
+
+    def update_flag(self):
+        self.setText(self.get_flag())
+
+    # Метод: обновляет флаг
+    def get_flag(self):
+        flag = 'XX'
+        if self.lang == 67699721:
+            flag = 'EN'
+        elif self.lang == 68748313:
+            flag = 'RU'
+        return flag
 
 
 # Класс: пример шрифта
