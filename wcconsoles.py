@@ -13,9 +13,9 @@ __python_version__ = "3"
 
 
 import os
-from PyQt5.QtWidgets import (QWidget, QTextEdit, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel)
+from PyQt5.QtWidgets import (QWidget, QTextEdit, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QCompleter)
 from PyQt5.QtGui import (QIcon)
-from PyQt5.QtCore import (Qt, pyqtSignal)
+from PyQt5.QtCore import (Qt, pyqtSignal, QStringListModel)
 from .wcwidgets import WCFlagUserKeyboard
 import win32api
 
@@ -37,16 +37,78 @@ class WCCommandLine(QLineEdit):
         super(WCCommandLine, self).__init__(*args)
         # Количество слов
         self._word_count = 0
+        # Последнее слово
+        self._last_word = ''
+        # Список команд
+        self._command_list = [['cls'], ['debug', 'info'], ['command'], ['exit']]
+        # Текущий список команд
+        self._current_command_list = self._command_list[:]
+        # Текущий список завершения
+        self._current_complete = []
         # Инициализация
         self._init_ui()
 
     # Конструктор: настройки виджета
     def _init_ui(self):
         self.setFixedHeight(32)
+        #
+        self.create_complete_list()
+        #
+        self.model = QStringListModel()
+        self._completer = QCompleter()
+        self._completer.setCompletionMode(QCompleter.InlineCompletion)
+        self._completer.setModel(self.model)
+        self.set_data()
+        #
+        self.setCompleter(self._completer)
 
-    # Метод: возвращает количство слов
+    # Метод: возвращает количество слов
     def get_world_count(self):
         return self._word_count
+
+    #
+    def set_data(self):
+        print('set data:', self._current_complete)
+        self.model.setStringList(self._current_complete)
+
+    # Метод: добавляет команду
+    def add_command(self, command):
+        complete_list = command.get_complete_list
+        if complete_list not in self._command_list:
+            self._command_list.append(complete_list)
+
+    # Метод: удаляет команду
+    def remove_command(self, command):
+        complete_list = command.get_complete_list
+        if complete_list in self._command_list:
+            self._command_list.remove(complete_list)
+
+    # Метод: создает список автозавершения
+    def create_complete_list(self):
+        res_cmd = []
+        res_complete = []
+        if self._last_word == '':
+            for cmd in self._command_list:
+                try:
+                    cmd_name = cmd[0]
+                    if cmd_name not in res_complete:
+                        res_complete.append(cmd_name)
+                    res_cmd.append(cmd)
+                except Exception:
+                    continue
+        else:
+            for cmd in self._current_command_list:
+                try:
+                    if self._last_word == cmd[self._word_count]:
+                        offset = cmd[self._word_count + 1]
+                        if offset not in res_complete:
+                            res_complete.append(offset)
+                        res_cmd.append(cmd)
+                except Exception:
+                    continue
+
+        self._current_command_list = res_cmd[:]
+        self._current_complete = res_complete[:]
 
     # Обработчик: нажатие клавиш
     def keyPressEvent(self, event):
@@ -54,6 +116,14 @@ class WCCommandLine(QLineEdit):
 
         if event.key() in [Qt.Key_Space, Qt.Key_Backspace, Qt.Key_Delete]:
             text = self.text().split()
+            try:
+                self._last_word = text[-1]
+            except IndexError:
+                self._last_word = ''
+            self.create_complete_list()
+            print(self._last_word, self._current_complete)
+            print(self._current_command_list)
+            self.set_data()
             self._word_count = len(text)
             self.change_word_count.emit(self._word_count)
 

@@ -32,6 +32,32 @@ class WCClearCommand(WCClearExtend):
         # Пример использования команды
         self.help = []
 
-    # Метод: Запуск выполнения команды
-    def run(self):
+    # Метод: запуск выполнения команды
+    def run(self, *args):
         return False
+
+    # Метод: возвращает список автозавершения
+    def get_complete_list(self):
+        return self.complete_list
+
+
+# Класс: команда вывода текста
+class PrintCommand(WCClearCommand):
+
+    """
+    Класс команды вывода текста на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/04/15
+    """
+
+    # Конструктор
+    def __init__(self):
+        super(PrintCommand, self).__init__()
+        self.name = 'print'
+        self.complete_list = ['print', 'текст']
+        self.help = []
+
+    # Метод: запуск выполнения команды
+    def run(self, *args):
+        return '%s' % ' '.join(args[0])
