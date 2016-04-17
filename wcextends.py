@@ -44,7 +44,7 @@ class SystemExtend(WCClearExtend):
     @date 2016/04/17
     """
 
-    #
+    # Конструктор
     def __init__(self):
         super(SystemExtend, self).__init__()
         self.name = 'SystemExtend'

@@ -13,10 +13,12 @@ __python_version__ = "3"
 
 
 import os
+import datetime
 from PyQt5.QtWidgets import (QWidget, QTextEdit, QLineEdit, QVBoxLayout, QHBoxLayout, QCompleter)
 from PyQt5.QtGui import (QIcon)
 from PyQt5.QtCore import (Qt, pyqtSignal, QStringListModel, QEvent)
 from .wcwidgets import WCFlagUserKeyboard
+from .wcextends import (WCClearExtend, SystemExtend)
 import win32api
 
 
@@ -172,6 +174,8 @@ class WCCommandLine(QLineEdit):
     # Обработчик: текст изменился
     def _text_change(self, text):
         text = self.text()[:self.cursorPosition()]
+        if text == "":
+            self.update_word()
         try:
             self._prefix = text.split()[-1].strip()
         except IndexError:
@@ -180,7 +184,7 @@ class WCCommandLine(QLineEdit):
 
     # Обработчик: нажатие клавиш
     def keyPressEvent(self, event):
-        super(WCCommandLine, self).keyPressEvent(event)
+        #super(WCCommandLine, self).keyPressEvent(event)
 
         # [Space], [BackSpace], [Delete]
         if event.key() in [Qt.Key_Space, Qt.Key_Backspace, Qt.Key_Delete]:
@@ -214,11 +218,15 @@ class WCCommandLine(QLineEdit):
                 self.setText(self._save_command[self._current_command_num])
                 self.end(True)
 
+        return super(WCCommandLine, self).keyPressEvent(event)
+
     # Обработчик: события
     def event(self, event):
         # Нажатие [TAB]
         if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Tab:
-            self._complete_text(self._completer.currentCompletion())
+            text = self._completer.currentCompletion()
+            if text in self._current_complete:
+                self._complete_text(text)
             return True
 
         return super(WCCommandLine, self).event(event)
@@ -234,17 +242,148 @@ class WCDisplay(QTextEdit):
     @date 2016/04/15
     """
 
+    # Виды сообщений
+    _ERROR = 1
+    _SUCCESS = 2
+    _WARN = 3
+    _INFO = 4
+    _SYSTEM = 5
+
     # Конструктор
     def __init__(self, parent=None):
         super(WCDisplay, self).__init__(parent)
         self._parent = parent
         self._path = os.path.dirname(__file__)
+        self._styles = {}
+        self._open_tags = {}
+        self._close_tags = {}
+        self._load_extends = {}
         # Инициализация
         self._init_ui()
 
     # Конструктор: компоненты виджета
     def _init_ui(self):
         self.setReadOnly(True)
+        sys_extend = SystemExtend()
+        self.add_extend(sys_extend)
+
+    # Метод: добавляет стили к общим
+    def add_styles(self, styles):
+        return self._update_data_to_dict(styles, self._styles)
+
+    # Метод: удаляет стили из общих
+    def remove_styles(self, styles):
+        return self._remove_data_of_dict(styles, self._styles)
+
+    # Метод: добавляет открывающие теги
+    def add_open_tags(self, tags):
+        return self._update_data_to_dict(tags, self._open_tags)
+
+    # Метод: удаляет открывающие теги
+    def remove_open_tags(self, tags):
+        return self._remove_data_of_dict(tags, self._open_tags)
+
+    # Метод: добавляет закрывающие теги
+    def add_close_tags(self, tags):
+        return self._update_data_to_dict(tags, self._close_tags)
+
+    # Метод: удаляет закрывающие теги
+    def remove_close_tags(self, tags):
+        return self._remove_data_of_dict(tags, self._close_tags)
+
+    # Метод: добавляет расширение
+    def add_extend(self, extend_object):
+        if extend_object in self._load_extends or not isinstance(extend_object, WCClearExtend):
+            return False
+        else:
+            if len(extend_object.name) > 0:
+                # добавляем расширение к загруженным
+                added_extend = {extend_object.name: extend_object}
+                self._load_extends.update(added_extend)
+                # добавляем стили и теги
+                self.add_styles(extend_object.styles)
+                self.add_open_tags(extend_object.open_tags)
+                self.add_close_tags(extend_object.close_tags)
+                return True
+            return False
+
+    # Метод: удаляет расширение
+    def remove_extend(self, extend_object):
+        if isinstance(extend_object, WCClearExtend) and extend_object.name in self._load_extends.keys():
+            # удаляем расширение из загруженных
+            del self._load_extends[extend_object.name]
+            # удаляем стили и теги
+            self.remove_styles(extend_object.styles)
+            self.remove_open_tags(extend_object.open_tags)
+            self.remove_close_tags(extend_object.close_tags)
+            return True
+        return False
+
+    # Метод: добавляет сообщение на дисплей
+    def add_message(self, message, message_type=None):
+        format_message = self._format_messages(message, message_type)
+        parse_message = self._parse_text(format_message)
+        self.append(parse_message)
+
+    # Метод: добавляет сообщение на дисплей с меткой времени
+    def add_message_with_time(self, message, message_type=None):
+        now_date = datetime.datetime.now()
+        format_message = self._format_messages(message, message_type)
+        parse_message = self._parse_text(format_message)
+        sys_message = self._format_messages('[%s]:' % now_date.strftime('%d.%m.%Y %H:%M:%S'), self._SYSTEM)
+        self.append('%s %s' % (sys_message, parse_message))
+
+    # Метод: добавляет на дисплей пустую строку
+    def add_clear_message(self):
+        self.append('')
+
+    # Функция: форматирует сообщение
+    def _format_messages(self, message, message_type=None):
+        if message_type == self._ERROR:
+            color = self._styles['error']
+        elif message_type == self._INFO:
+            color = self._styles['info']
+        elif message_type == self._WARN:
+            color = self._styles['warn']
+        elif message_type == self._SUCCESS:
+            color = self._styles['success']
+        elif message_type == self._SYSTEM:
+            color = self._styles['system']
+        else:
+            color = self._styles['color']
+        return '<span style = "color:%s;">%s</span>' % (color, message)
+
+    # Функция: парсит и заменяет теги
+    def _parse_text(self, text):
+        result_text = text
+        # открытые теги
+        for open_tag in self._open_tags.keys():
+            format_text = result_text.replace(open_tag, self._open_tags[open_tag])
+            if format_text:
+                result_text = format_text
+        # закрытые теги
+        for close_tag in self._close_tags.keys():
+            format_text = result_text.replace(close_tag, self._close_tags[close_tag])
+            if format_text:
+                result_text = format_text
+        return result_text
+
+    # Функция: Обновляет данные в словаре
+    def _update_data_to_dict(self, update_data, dict_link):
+        if len(update_data) > 0 and type(update_data) == dict:
+            dict_link.update(update_data)
+            return True
+        return False
+
+    # Функция: удаляет данные из словоря
+    def _remove_data_of_dict(self, remove_data, dict_link):
+        if len(remove_data) > 0 and type(remove_data) == dict:
+            _keys = dict_link.keys()
+            for del_key in remove_data.keys():
+                if del_key in _keys:
+                    del dict_link[del_key]
+            return True
+        return False
 
 
 # Класс: консоль
@@ -302,8 +441,8 @@ class WCConsole(QWidget):
         self.lang_change.connect(self.lang_flag_update)
 
     # Метод: добавляет текст на экран
-    def add_message(self, text):
-        self.display.append(text)
+    def add_message(self, message, type_message=None):
+        self.display.add_message(message, type_message)
 
     # Метод: очищает экран
     def clear_display(self):
@@ -313,9 +452,10 @@ class WCConsole(QWidget):
     def parse_command(self):
         text = self.cmd_line.text().strip()
         self.cmd_line.save_command(text)
-        cmd_list = text.split(' ')
+        #cmd_list = text.split(' ')
         self.cmd_line.clear()
-        return cmd_list
+        #return cmd_list
+        self.add_message(text)
 
     # Обработчик: смена раскладки клавиатуры
     def lang_flag_update(self):
@@ -335,6 +475,6 @@ class WCConsole(QWidget):
 
         if self.focusWidget() == self.cmd_line and (event.key() in [16777220, 16777221]):
             command = self.parse_command()
-            self.add_message(str(command))
+            #self.add_message(str(command))
 
         QWidget.keyPressEvent(self, event)
