@@ -36,9 +36,12 @@ class WCCommandCompleter(QCompleter):
 
     # Обработчик: выводит совпадения
     def update(self, prefix):
-        self.setCompletionPrefix(prefix)
-        if prefix.strip() != '':
-            self.complete()
+        try:
+            _prefix = prefix.split()[-1]
+        except IndexError:
+            _prefix = ''
+        self.setCompletionPrefix(_prefix)
+        self.complete()
 
 
 # Класс: командная строка
@@ -52,7 +55,7 @@ class WCCommandLine(QLineEdit):
     """
 
     change_word_count = pyqtSignal(int)
-    text_changed = pyqtSignal(object)
+    prefix_update = pyqtSignal(str)
 
     # Конструктор
     def __init__(self, *args):
@@ -60,16 +63,12 @@ class WCCommandLine(QLineEdit):
         # Количество слов
         self._word_count = 0
         # Последнее слово
-        self._last_word = ''
         self._prefix = ''
         # Список введенных команд
         self._save_command = []
         self._current_command_num = 0
         # Список команд
         self._command_list = [['cls'], ['debug', 'info'], ['command'], ['exit']]
-        # Текущий список команд
-        self._current_command_list = self._command_list[:]
-        # Текущий список завершения
         self._current_complete = []
         # Инициализация
         self._init_ui()
@@ -78,24 +77,20 @@ class WCCommandLine(QLineEdit):
     # Конструктор: настройки виджета
     def _init_ui(self):
         self.setFixedHeight(32)
-        # Создаем список автозавершения
-        self.create_complete_list()
         # Создаем комплитер
         self._completer = WCCommandCompleter(self)
-        self._completer.setCaseSensitivity(Qt.CaseInsensitive)
-        self._completer.setCompletionMode(QCompleter.PopupCompletion)
-        self.update_completer()
+        self.update_model()
 
     # Конструктор: слушатели
     def _init_connect(self):
-        self._completer.activated.connect(self._complete_text)
-        self.textChanged.connect(self._text_change)
-        self.text_changed.connect(self._completer.update)
+        self.textChanged.connect(self.text_update)
+        self._completer.activated.connect(self.insert_text)
+        self.prefix_update.connect(self._completer.update)
 
     # Метод: возвращает список команд
     def get_command(self):
         res = []
-        for cmd in self._current_command_list:
+        for cmd in self._command_list:
             res.append(cmd[0])
         return res
 
@@ -126,54 +121,57 @@ class WCCommandLine(QLineEdit):
             self._current_command_num = len(self._save_command) - 1
 
     # Метод: создает список автозавершения
-    def create_complete_list(self):
-        res_cmd = []
-        res_complete = []
-        if self._last_word == '':
+    def update_model(self):
+        self._current_complete = []
+        if self._prefix == '':
             for cmd in self._command_list:
                 try:
                     cmd_name = cmd[0]
-                    if cmd_name not in res_complete:
-                        res_complete.append(cmd_name)
-                    res_cmd.append(cmd)
-                except Exception:
-                    continue
-        else:
-            for cmd in self._current_command_list:
-                try:
-                    if self._last_word == cmd[self._word_count - 1]:
-                        offset = cmd[self._word_count]
-                        if offset not in res_complete:
-                            res_complete.append(offset)
-                        res_cmd.append(cmd)
-                except Exception:
+                    if cmd_name not in self._current_complete:
+                        self._current_complete.append(cmd_name)
+                except IndexError:
                     continue
 
-        self._current_command_list = res_cmd[:]
-        self._current_complete = res_complete[:]
+        else:
+            for cmd in self._command_list:
+                try:
+                    cmd_name = cmd[self._word_count - 1]
+                    if self._prefix == cmd_name:
+                        new_cmd = cmd[self._word_count]
+                        if new_cmd not in self._current_complete:
+                            self._current_complete.append(new_cmd)
+                except IndexError:
+                    continue
+
+        self._completer.update_model(self._current_complete)
 
     # Метод: обновляет данные по словам
     def update_word(self):
         all_text = self.text().split()
         try:
-            self._last_word = all_text[-1].strip()
+            self._prefix = all_text[-1].strip()
         except IndexError:
-            self._last_word = ''
-        # Сигнал с количеством слов
+            self._prefix = ''
         self._word_count = len(all_text)
+        self.update_model()
         self.change_word_count.emit(self.get_world_count())
-        # Обновляем список слов автозавершения
-        self.create_complete_list()
-        self.update_completer()
+
+    # Метод: очищает введенные данные
+    def clear(self):
+        super(WCCommandLine, self).clear()
+        self.setCursorPosition(0)
+        self._word_count = 0
+        self._prefix = ''
+        self.update_word()
 
     # Обработчик: комплитер активировался
-    def _complete_text(self, text):
+    def insert_text(self, text):
         cur_pos = self.cursorPosition()
         form_text = self.text()
         before_text = form_text[:cur_pos]
         after_text = form_text[cur_pos:]
         try:
-            prefix_len = len(before_text.split()[-1].strip())
+            prefix_len = len(before_text.split(' ')[-1].strip())
         except IndexError:
             prefix_len = 0
         ins_text = '%s%s %s' % (before_text[:cur_pos - prefix_len], text, after_text)
@@ -182,23 +180,23 @@ class WCCommandLine(QLineEdit):
         self.update_word()
 
     # Обработчик: текст изменился
-    def _text_change(self, text):
+    def text_update(self, text):
         text = self.text()[:self.cursorPosition()]
-        if text == "":
-            self.update_word()
-        try:
-            self._prefix = text.split()[-1].strip()
-        except IndexError:
-            self._prefix = ''
-        self.text_changed.emit(self._prefix)
+        self.prefix_update.emit(text)
 
     # Обработчик: нажатие клавиш
     def keyPressEvent(self, event):
-        #super(WCCommandLine, self).keyPressEvent(event)
+        super(WCCommandLine, self).keyPressEvent(event)
 
         # [Space], [BackSpace], [Delete]
         if event.key() in [Qt.Key_Space, Qt.Key_Backspace, Qt.Key_Delete]:
             self.update_word()
+
+        # [Ctrl] + [Space]
+        if event.modifiers() and Qt.ControlModifier:
+            if event.key() == Qt.Key_Space:
+                self._completer.update('')
+                self._completer.complete()
 
         # стрелка вверх
         if event.key() == 16777235:
@@ -228,15 +226,13 @@ class WCCommandLine(QLineEdit):
                 self.setText(self._save_command[self._current_command_num])
                 self.end(True)
 
-        return super(WCCommandLine, self).keyPressEvent(event)
-
     # Обработчик: события
     def event(self, event):
         # Нажатие [TAB]
         if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Tab:
             text = self._completer.currentCompletion()
             if text in self._current_complete:
-                self._complete_text(text)
+                self.insert_text(text)
             return True
 
         return super(WCCommandLine, self).event(event)
