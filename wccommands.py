@@ -29,6 +29,8 @@ class WCClearCommand(WCClearExtend):
         super(WCClearCommand, self).__init__()
         # Список автозавершения команды
         self.complete_list = []
+        # Описание команды
+        self.desc = ''
         # Пример использования команды
         self.help = []
 
@@ -55,6 +57,7 @@ class PrintCommand(WCClearCommand):
     def __init__(self):
         super(PrintCommand, self).__init__()
         self.name = 'print'
+        self.desc = 'Выводит на экран форматированный текст'
         self.complete_list = ['print', 'текст']
         self.help = []
 
