@@ -58,7 +58,7 @@ class PrintCommand(WCClearCommand):
         super(PrintCommand, self).__init__()
         self.name = 'print'
         self.desc = 'Выводит на экран форматированный текст'
-        self.complete_list = ['print', 'текст']
+        self.complete_list = ['print', 'text']
         self.help = []
 
     # Метод: запуск выполнения команды

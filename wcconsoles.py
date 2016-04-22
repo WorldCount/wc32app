@@ -16,9 +16,10 @@ import os
 import datetime
 from PyQt5.QtWidgets import (QWidget, QTextEdit, QLineEdit, QVBoxLayout, QHBoxLayout, QCompleter)
 from PyQt5.QtGui import (QIcon)
-from PyQt5.QtCore import (Qt, pyqtSignal, QStringListModel, QEvent)
+from PyQt5.QtCore import (Qt, pyqtSignal, QStringListModel, QEvent, QRect)
 from .wcwidgets import WCFlagUserKeyboard
 from .wcextends import (WCClearExtend, SystemExtend)
+from .wccommands import (WCClearCommand, PrintCommand)
 import win32api
 
 
@@ -65,7 +66,7 @@ class WCCommandLine(QLineEdit):
         self._save_command = []
         self._current_command_num = 0
         # Список команд
-        self._command_list = [['cls'], ['debug'], ['command'], ['exit']]
+        self._command_list = [['cls'], ['debug', 'info'], ['command'], ['exit']]
         # Текущий список команд
         self._current_command_list = self._command_list[:]
         # Текущий список завершения
@@ -81,6 +82,8 @@ class WCCommandLine(QLineEdit):
         self.create_complete_list()
         # Создаем комплитер
         self._completer = WCCommandCompleter(self)
+        self._completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self._completer.setCompletionMode(QCompleter.PopupCompletion)
         self.update_completer()
 
     # Конструктор: слушатели
@@ -88,6 +91,13 @@ class WCCommandLine(QLineEdit):
         self._completer.activated.connect(self._complete_text)
         self.textChanged.connect(self._text_change)
         self.text_changed.connect(self._completer.update)
+
+    # Метод: возвращает список команд
+    def get_command(self):
+        res = []
+        for cmd in self._current_command_list:
+            res.append(cmd[0])
+        return res
 
     # Метод: возвращает количество слов
     def get_world_count(self):
@@ -99,15 +109,15 @@ class WCCommandLine(QLineEdit):
 
     # Метод: добавляет команду
     def add_command(self, command):
-        complete_list = command.get_complete_list
-        if complete_list not in self._command_list:
-            self._command_list.append(complete_list)
+        if command not in self._command_list:
+            self._command_list.append(command)
+            self.update_word()
 
     # Метод: удаляет команду
     def remove_command(self, command):
-        complete_list = command.get_complete_list
-        if complete_list in self._command_list:
-            self._command_list.remove(complete_list)
+        if command in self._command_list:
+            self._command_list.remove(command)
+            self.update_word()
 
     # Метод: сохраняет введеную команду
     def save_command(self, command):
@@ -405,9 +415,14 @@ class WCConsole(QWidget):
         self._parent = parent
         self._path = os.path.dirname(__file__)
         self._name = self.__class__.__name__
+        # Список доступных команд
+        self._command_list = []
+        # Расширение команд
+        self._extends_command = {}
         # Инициализация
         self._init_ui()
         self._init_widget()
+        self._init_command()
         self._init_connect()
 
     # Конструктор: настройки виджета
@@ -436,6 +451,13 @@ class WCConsole(QWidget):
         vbox.addLayout(hbox)
         self.setLayout(vbox)
 
+    # Конструктор: команды
+    def _init_command(self):
+        cmd_print = PrintCommand()
+        self.add_command(cmd_print)
+        #self.remove_command(cmd_print)
+        print(self.cmd_line.get_command())
+
     # Конструктор: слушатели
     def _init_connect(self):
         self.lang_change.connect(self.lang_flag_update)
@@ -456,6 +478,37 @@ class WCConsole(QWidget):
         self.cmd_line.clear()
         #return cmd_list
         self.add_message(text)
+
+    # Метод: добавляет команду
+    def add_command(self, command_object):
+        if isinstance(command_object, WCClearCommand):
+            if command_object.name not in self._command_list:
+                self._command_list.append(command_object.name)
+                self.cmd_line.add_command(command_object.complete_list)
+                self.display.add_extend(command_object)
+                self._extends_command.update({command_object.name: command_object})
+                return True
+        return False
+
+    # Метод: удаляет команду
+    def remove_command(self, command_object):
+        if isinstance(command_object, WCClearCommand):
+            if command_object.name in self._command_list:
+                self._command_list.remove(command_object.name)
+                self.cmd_line.remove_command(command_object.complete_list)
+                self.display.remove_extend(command_object)
+                if command_object.name in self._extends_command.keys():
+                    del self._extends_command[command_object.name]
+                return True
+        return False
+
+    # Метод: возвращает список команд в форматированном виде
+    def show_command_list(self):
+        _cmd = self.cmd_line.get_command()
+        sorted(_cmd)
+        format_line = '[system][b]Список доступных команд:[/b][/system] [success]%s[/success]'
+        res = format_line % ('[warn],[/warn] '.join(_cmd))
+        return res
 
     # Обработчик: смена раскладки клавиатуры
     def lang_flag_update(self):
