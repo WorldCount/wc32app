@@ -16,10 +16,10 @@ import os
 import datetime
 from PyQt5.QtWidgets import (QWidget, QTextEdit, QLineEdit, QVBoxLayout, QHBoxLayout, QCompleter)
 from PyQt5.QtGui import (QIcon)
-from PyQt5.QtCore import (Qt, pyqtSignal, QStringListModel, QEvent, QRect)
+from PyQt5.QtCore import (Qt, pyqtSignal, QStringListModel, QEvent)
 from .wcwidgets import WCFlagUserKeyboard
 from .wcextends import (WCClearExtend, SystemExtend)
-from .wccommands import (WCClearCommand, PrintCommand)
+from .wccommands import (WCClearCommand, PrintCommand, DateTimeCommand, HostCommand)
 import win32api
 
 
@@ -68,7 +68,7 @@ class WCCommandLine(QLineEdit):
         self._save_command = []
         self._current_command_num = 0
         # Список команд
-        self._command_list = [['cls'], ['debug', 'info'], ['command'], ['exit']]
+        self._command_list = [['cls'], ['debug'], ['command'], ['exit'], ['help']]
         self._current_complete = []
         # Инициализация
         self._init_ui()
@@ -450,9 +450,13 @@ class WCConsole(QWidget):
     # Конструктор: команды
     def _init_command(self):
         cmd_print = PrintCommand()
+        cmd_date = DateTimeCommand()
+        cmd_host = HostCommand()
+
         self.add_command(cmd_print)
-        #self.remove_command(cmd_print)
-        print(self.cmd_line.get_command())
+        self.add_command(cmd_date)
+        self.add_command(cmd_host)
+        #print(self.cmd_line.get_command())
 
     # Конструктор: слушатели
     def _init_connect(self):
@@ -462,18 +466,129 @@ class WCConsole(QWidget):
     def add_message(self, message, type_message=None):
         self.display.add_message(message, type_message)
 
+    # Метод: добавляет текст на экран c меткой времени
+    def add_message_with_time(self, message, type_message=None):
+        self.display.add_message_with_time(message, type_message)
+
     # Метод: очищает экран
     def clear_display(self):
         self.display.clear()
 
     # Метод: парсит команду
-    def parse_command(self):
-        text = self.cmd_line.text().strip()
+    def parse_command(self, echo=True):
+        text = self.cmd_line.text().strip().lower()
+
+        if echo:
+            self.add_message_with_time('[system]%s ~>[/system]' % text)
+
         self.cmd_line.save_command(text)
-        #cmd_list = text.split(' ')
+        cmd_list = text.split()
         self.cmd_line.clear()
-        #return cmd_list
-        self.add_message(text)
+        return cmd_list
+
+    # Метод: выводит список команд
+    def get_all_command(self, filter_str=None):
+        command_dict = {'cls': 'Очищает экран', 'debug': 'Выводит отладочную информацию',
+                        'exit': 'Выходит из приложения', 'help': 'Выводит справку по команде',
+                        'command': 'Выводит список доступных команд'}
+
+        for command in self._extends_command:
+            cmd_name = command
+            cmd_desc = self._extends_command[command].desc
+
+            if cmd_name not in command_dict.keys():
+                command_dict.update({cmd_name: cmd_desc})
+
+        if filter_str:
+            keys = sorted([key for key in command_dict.keys() if key.startswith(filter_str)])
+        else:
+            keys = sorted(list(command_dict.keys()))
+
+        if len(keys) > 0:
+            for key in keys:
+                text = '[b][success]%s[/success][/b] - %s' % (key, command_dict[key])
+                self.add_message(text)
+        else:
+            self.add_message('[error]Команды не найдены![/error]')
+
+    # Метод: выводит справку по командам
+    def help(self, *args):
+        if args[0] == 'help':
+            self.add_message('Для вывода справки по команде введите:', self.display._INFO)
+            self.add_message('[b]help [warn][команда][/warn][/b]', self.display._SUCCESS)
+            self.display.add_clear_message()
+            self.add_message('Для получения списка доступных команд введите:', self.display._INFO)
+            self.add_message('[b]command[/b]', self.display._SUCCESS)
+        else:
+            cmd_name = args[0][0]
+
+            if cmd_name == 'command':
+                self.add_message('[success][b]command[/b][/success] - выводит список доступных команд.')
+                _text = '[b][success][b]command[/b][/success] [warn][текст][/warn][/b] ' \
+                        '- выводит список команд начинающихся с текста.'
+                self.add_message(_text)
+            elif cmd_name == 'exit':
+                self.add_message('[success][b]exit[/b][/success] - выход из приложения.')
+            elif cmd_name == 'cls':
+                self.add_message('[success][b]cls[/b][/success] - очищает экран.')
+            elif cmd_name == 'debug':
+                self.add_message('[success][b]debug[/b][/success] - [error]команда только для отладки.[/error]')
+            elif cmd_name == 'help':
+                self.add_message('[success][b]help[/b][/success] - выводит справку.')
+                _text = '[b][success][b]help[/b][/success] [warn][команда][/warn][/b] - выводит справку по команде.'
+                self.add_message(_text)
+            elif cmd_name in self._command_list:
+                for help_line in self._extends_command[cmd_name].help:
+                    self.add_message(help_line)
+            else:
+                self.add_message('Команда "%s" не найдена!' % cmd_name, self.display._ERROR)
+
+    # Метод: запускает команды
+    def run_command(self, command):
+        len_cmd = len(command)
+        if len_cmd > 0:
+            cmd_name = command[0]
+            args = command[1:]
+
+            # очистка экрана
+            if cmd_name == 'cls':
+                self.clear_display()
+            # выход из приложения
+            elif cmd_name == 'exit':
+                if self._parent:
+                    self._parent.close()
+                else:
+                    self.close()
+            # отладка
+            elif cmd_name == 'debug':
+                self._debug()
+            elif cmd_name == 'command':
+                if len_cmd > 1:
+                    self.get_all_command(args[0])
+                else:
+                    self.get_all_command()
+            # помощь по команде
+            elif cmd_name == 'help':
+                if len_cmd > 1:
+                    self.help(args)
+                else:
+                    self.help(cmd_name)
+            # конманды добавленные расширением
+            elif cmd_name in self._command_list:
+                cmd_object = self._extends_command[cmd_name]
+                res = cmd_object.run(args)
+                if type(res) in [str, int]:
+                    self.add_message(res)
+                else:
+                    for line in res:
+                        self.add_message(line)
+            else:
+                self.add_message("Ошибка! Неизвестная команда: '%s'" % cmd_name, self.display._ERROR)
+
+            if cmd_name != 'cls':
+                self.display.add_clear_message()
+        else:
+            return
 
     # Метод: добавляет команду
     def add_command(self, command_object):
@@ -506,6 +621,10 @@ class WCConsole(QWidget):
         res = format_line % ('[warn],[/warn] '.join(_cmd))
         return res
 
+    # Метод: служит для отладки
+    def debug(self):
+        pass
+
     # Обработчик: смена раскладки клавиатуры
     def lang_flag_update(self):
         lang = win32api.GetKeyboardLayout()
@@ -523,7 +642,7 @@ class WCConsole(QWidget):
             self.lang_change.emit()
 
         if self.focusWidget() == self.cmd_line and (event.key() in [16777220, 16777221]):
-            command = self.parse_command()
-            #self.add_message(str(command))
+            commands = self.parse_command()
+            self.run_command(commands)
 
         QWidget.keyPressEvent(self, event)
