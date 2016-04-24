@@ -563,6 +563,7 @@ class WCConsole(QWidget):
         hbox.addWidget(self.flag)
         vbox.addLayout(hbox)
         self.setLayout(vbox)
+        self.cmd_line.setFocus()
 
     # Конструктор: команды
     def _init_command(self):
