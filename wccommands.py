@@ -60,7 +60,10 @@ class PrintCommand(WCClearCommand):
         super(PrintCommand, self).__init__()
         self.name = 'print'
         self.desc = 'Выводит на экран форматированный текст'
-        self.complete_list = ['print', 'text']
+        self.complete_list = """
+print
+    текст
+"""
         self.help = [
             '[success][b]print[/success] [warn]Текст[/warn][/b] - выводит форматированый текст',
         ]
@@ -85,7 +88,9 @@ class DateTimeCommand(WCClearCommand):
         super(DateTimeCommand, self).__init__()
         self.name = 'date'
         self.desc = 'Выводит на экран текущую дату и время'
-        self.complete_list = ['date']
+        self.complete_list = """
+date
+"""
         self.help = [
             '[success][b]date[/b][/success] - выводит дату и время',
         ]
@@ -111,7 +116,9 @@ class HostCommand(WCClearCommand):
         super(HostCommand, self).__init__()
         self.name = 'host'
         self.desc = 'Выводит на экран текущий ip-адресс хоста'
-        self.complete_list = ['host']
+        self.complete_list = """
+host
+"""
         self.help = [
             '[success][b]host[/b][/success] - выводит текущий ip-адресс хоста',
         ]

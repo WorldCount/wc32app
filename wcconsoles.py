@@ -16,32 +16,180 @@ import os
 import datetime
 from PyQt5.QtWidgets import (QWidget, QTextEdit, QLineEdit, QVBoxLayout, QHBoxLayout, QCompleter)
 from PyQt5.QtGui import (QIcon)
-from PyQt5.QtCore import (Qt, pyqtSignal, QStringListModel, QEvent)
+from PyQt5.QtCore import (Qt, pyqtSignal, QStringListModel, QEvent, QAbstractItemModel, QModelIndex)
 from .wcwidgets import WCFlagUserKeyboard
 from .wcextends import (WCClearExtend, SystemExtend)
 from .wccommands import (WCClearCommand, PrintCommand, DateTimeCommand, HostCommand)
 import win32api
 
 
+# Класс: часть команды
+class CommandItem(object):
+
+    def __init__(self, data, parent=None):
+        self.parentItem = parent
+        self.itemData = data
+        self.childItems = []
+
+    def appendChild(self, item):
+        self.childItems.append(item)
+
+    def child(self, row):
+        return self.childItems[row]
+
+    def childCount(self):
+        return len(self.childItems)
+
+    def columnCount(self):
+        return len(self.itemData)
+
+    def data(self, column):
+        try:
+            return self.itemData[column]
+        except IndexError:
+            return None
+
+    def parent(self):
+        return self.parentItem
+
+    def row(self):
+        if self.parentItem:
+            return self.parentItem.childItems.index(self)
+
+        return 0
+
+    def __repr__(self):
+        return 'CommandItem(%s)' % self.itemData
+
+
+# Класс: модель команд
+class CommandModel(QAbstractItemModel):
+
+    def __init__(self, data, parent=None):
+        super(CommandModel, self).__init__(parent)
+        self.rootItem = CommandItem(("Command",))
+        self.setupModelData(data.split('\n'), self.rootItem)
+
+    def columnCount(self, parent=None, *args, **kwargs):
+        if parent.isValid():
+            return parent.internalPointer().columnCount()
+        else:
+            return self.rootItem.columnCount()
+
+    def data(self, index, role=None):
+        if not index.isValid():
+            return None
+
+        if role == Qt.EditRole:
+            return self.rootItem.data(0)
+
+        if role != Qt.DisplayRole:
+            return None
+
+        item = index.internalPointer()
+        return item.data(index.column())
+
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.NoItemFlags
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+
+    def headerData(self, section, orientation, role=None):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self.rootItem.data(section)
+
+        return None
+
+    def index(self, row, column, parent=None, *args, **kwargs):
+        if not self.hasIndex(row, column, parent):
+            return QModelIndex()
+
+        if not parent.isValid():
+            parentItem = self.rootItem
+        else:
+            parentItem = parent.internalPointer()
+
+        childItem = parentItem.child(row)
+        if childItem:
+            return self.createIndex(row, column, childItem)
+        else:
+            return QModelIndex()
+
+    def parent(self, index=None):
+        if not index.isValid():
+            return QModelIndex()
+
+        childItem = index.internalPointer()
+        parentItem = childItem.parent()
+
+        if parentItem == self.rootItem:
+            return QModelIndex()
+
+        return self.createIndex(parentItem.row(), 0, parentItem)
+
+    def rowCount(self, parent=None, *args, **kwargs):
+        if parent.column() > 0:
+            return 0
+
+        if not parent.isValid():
+            parentItem = self.rootItem
+        else:
+            parentItem = parent.internalPointer()
+
+        return parentItem.childCount()
+
+    def setupModelData(self, lines, parent):
+        parents = [parent]
+        indentations = [0]
+
+        number = 0
+
+        while number < len(lines):
+            position = 0
+            while position < len(lines[number]):
+                if lines[number][position] != ' ':
+                    break
+                position += 1
+
+            lineData = lines[number][position:].strip()
+
+            if lineData:
+                # Read the column data from the rest of the line.
+                columnData = [s for s in lineData.split('+') if s]
+
+                if position > indentations[-1]:
+                    # The last child of the current parent is now the new
+                    # parent unless the current parent has no children.
+
+                    if parents[-1].childCount() > 0:
+                        parents.append(parents[-1].child(parents[-1].childCount() - 1))
+                        indentations.append(position)
+
+                else:
+                    while position < indentations[-1] and len(parents) > 0:
+                        parents.pop()
+                        indentations.pop()
+
+                # Append a new item to the current parent's list of children.
+                newtreeitem = CommandItem(columnData, parents[-1])
+                parents[-1].appendChild(newtreeitem)
+
+            number += 1
+
+
+# Класс: автозавершение команд
 class WCCommandCompleter(QCompleter):
 
-    def __init__(self, parent):
-        super(WCCommandCompleter, self).__init__()
-        self.setWidget(parent)
+    def splitPath(self, path):
+        return path.split(' ')
 
-    # Метод: обновляет данные в модели
-    def update_model(self, complete_list):
-        model = QStringListModel(complete_list, self)
-        self.setModel(model)
-
-    # Обработчик: выводит совпадения
-    def update(self, prefix):
-        try:
-            _prefix = prefix.split()[-1]
-        except IndexError:
-            _prefix = ''
-        self.setCompletionPrefix(_prefix)
-        self.complete()
+    def pathFromIndex(self, index):
+        result = []
+        while index.isValid():
+            result = [self.model().data(index, Qt.DisplayRole)] + result
+            index = index.parent()
+        r = ' '.join(result)
+        return r
 
 
 # Класс: командная строка
@@ -55,21 +203,28 @@ class WCCommandLine(QLineEdit):
     """
 
     change_word_count = pyqtSignal(int)
-    prefix_update = pyqtSignal(str)
 
     # Конструктор
     def __init__(self, *args):
         super(WCCommandLine, self).__init__(*args)
         # Количество слов
         self._word_count = 0
-        # Последнее слово
-        self._prefix = ''
         # Список введенных команд
         self._save_command = []
         self._current_command_num = 0
         # Список команд
-        self._command_list = [['cls'], ['debug'], ['command'], ['exit'], ['help']]
-        self._current_complete = []
+        self._command = """
+cls
+debug
+command
+    команда
+exit
+help
+    команда
+history
+    clear
+"""
+
         # Инициализация
         self._init_ui()
         self._init_connect()
@@ -78,41 +233,39 @@ class WCCommandLine(QLineEdit):
     def _init_ui(self):
         self.setFixedHeight(32)
         # Создаем комплитер
-        self._completer = WCCommandCompleter(self)
+        self._completer = WCCommandCompleter()
+        self._completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self._completer.setCompletionRole(Qt.DisplayRole)
+        self._completer.setCompletionColumn(0)
         self.update_model()
+        self.setCompleter(self._completer)
 
     # Конструктор: слушатели
     def _init_connect(self):
-        self.textChanged.connect(self.text_update)
-        self._completer.activated.connect(self.insert_text)
-        self.prefix_update.connect(self._completer.update)
+        pass
 
-    # Метод: возвращает список команд
-    def get_command(self):
-        res = []
-        for cmd in self._command_list:
-            res.append(cmd[0])
-        return res
+    # Метод: создает список автозавершения
+    def update_model(self):
+        model = CommandModel(self._command)
+        self._completer.setModel(model)
 
     # Метод: возвращает количество слов
     def get_world_count(self):
         return self._word_count
 
-    # Метод: обновляет данные комплитера
-    def update_completer(self):
-        self._completer.update_model(self._current_complete)
-
     # Метод: добавляет команду
     def add_command(self, command):
-        if command not in self._command_list:
-            self._command_list.append(command)
-            self.update_word()
+        if command not in self._command:
+            new_command = "%s %s" % (self._command, command)
+            self._command = new_command
+            self.update_model()
 
     # Метод: удаляет команду
     def remove_command(self, command):
-        if command in self._command_list:
-            self._command_list.remove(command)
-            self.update_word()
+        if command in self._command:
+            new_command = self._command.replace(command, "")
+            self._command = new_command
+            self.update_model()
 
     # Метод: сохраняет введеную команду
     def save_command(self, command):
@@ -120,40 +273,19 @@ class WCCommandLine(QLineEdit):
             self._save_command.append(command)
             self._current_command_num = len(self._save_command) - 1
 
-    # Метод: создает список автозавершения
-    def update_model(self):
-        self._current_complete = []
-        if self._prefix == '':
-            for cmd in self._command_list:
-                try:
-                    cmd_name = cmd[0]
-                    if cmd_name not in self._current_complete:
-                        self._current_complete.append(cmd_name)
-                except IndexError:
-                    continue
+    # Метод: очищает сохраненные команды
+    def clear_history(self):
+        self._save_command = []
+        self._current_command_num = 0
 
-        else:
-            for cmd in self._command_list:
-                try:
-                    cmd_name = cmd[self._word_count - 1]
-                    if self._prefix == cmd_name:
-                        new_cmd = cmd[self._word_count]
-                        if new_cmd not in self._current_complete:
-                            self._current_complete.append(new_cmd)
-                except IndexError:
-                    continue
-
-        self._completer.update_model(self._current_complete)
+    # Метод: возвращает список сохраненных команд
+    def get_history(self):
+        return self._save_command
 
     # Метод: обновляет данные по словам
     def update_word(self):
         all_text = self.text().split()
-        try:
-            self._prefix = all_text[-1].strip()
-        except IndexError:
-            self._prefix = ''
         self._word_count = len(all_text)
-        self.update_model()
         self.change_word_count.emit(self.get_world_count())
 
     # Метод: очищает введенные данные
@@ -161,28 +293,15 @@ class WCCommandLine(QLineEdit):
         super(WCCommandLine, self).clear()
         self.setCursorPosition(0)
         self._word_count = 0
-        self._prefix = ''
         self.update_word()
 
-    # Обработчик: комплитер активировался
-    def insert_text(self, text):
-        cur_pos = self.cursorPosition()
-        form_text = self.text()
-        before_text = form_text[:cur_pos]
-        after_text = form_text[cur_pos:]
-        try:
-            prefix_len = len(before_text.split(' ')[-1].strip())
-        except IndexError:
-            prefix_len = 0
-        ins_text = '%s%s %s' % (before_text[:cur_pos - prefix_len], text, after_text)
-        self.setText(ins_text)
-        self.setCursorPosition(cur_pos - prefix_len + len(text) + 2)
-        self.update_word()
-
-    # Обработчик: текст изменился
-    def text_update(self, text):
-        text = self.text()[:self.cursorPosition()]
-        self.prefix_update.emit(text)
+    # Обработчик: завершение команды
+    def complete(self):
+        index = self._completer.currentIndex()
+        self._completer.popup().setCurrentIndex(index)
+        start = self._completer.currentRow()
+        if not  self._completer.setCurrentRow(start + 1):
+            self._completer.setCurrentRow(0)
 
     # Обработчик: нажатие клавиш
     def keyPressEvent(self, event):
@@ -195,7 +314,6 @@ class WCCommandLine(QLineEdit):
         # [Ctrl] + [Space]
         if event.modifiers() and Qt.ControlModifier:
             if event.key() == Qt.Key_Space:
-                self._completer.update('')
                 self._completer.complete()
 
         # стрелка вверх
@@ -230,9 +348,8 @@ class WCCommandLine(QLineEdit):
     def event(self, event):
         # Нажатие [TAB]
         if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Tab:
-            text = self._completer.currentCompletion()
-            if text in self._current_complete:
-                self.insert_text(text)
+            self.complete()
+            self._completer.popup().hide()
             return True
 
         return super(WCCommandLine, self).event(event)
@@ -456,7 +573,7 @@ class WCConsole(QWidget):
         self.add_command(cmd_print)
         self.add_command(cmd_date)
         self.add_command(cmd_host)
-        #print(self.cmd_line.get_command())
+        #self.remove_command(cmd_print)
 
     # Конструктор: слушатели
     def _init_connect(self):
@@ -486,11 +603,24 @@ class WCConsole(QWidget):
         self.cmd_line.clear()
         return cmd_list
 
+    # Метод: выводит историю команд
+    def get_history(self):
+        history = self.cmd_line.get_history()
+        for num, cmd in enumerate(history):
+            text = '[error]%d.[/error] [success]%s[/success]' % (num + 1, cmd)
+            self.add_message(text)
+
+    # Метод: очищает историю команд
+    def clear_history(self):
+        self.cmd_line.clear_history()
+        self.add_message('[success]История команд очищена![/success]')
+
     # Метод: выводит список команд
     def get_all_command(self, filter_str=None):
         command_dict = {'cls': 'Очищает экран', 'debug': 'Выводит отладочную информацию',
                         'exit': 'Выходит из приложения', 'help': 'Выводит справку по команде',
-                        'command': 'Выводит список доступных команд'}
+                        'command': 'Выводит список доступных команд',
+                        'history': 'Управление списком сохраненных команд'}
 
         for command in self._extends_command:
             cmd_name = command
@@ -537,6 +667,10 @@ class WCConsole(QWidget):
                 self.add_message('[success][b]help[/b][/success] - выводит справку.')
                 _text = '[b][success][b]help[/b][/success] [warn][команда][/warn][/b] - выводит справку по команде.'
                 self.add_message(_text)
+            elif cmd_name == 'history':
+                self.add_message('[success][b]history[/b][/success] - выводит список сохраненных команд.')
+                _text = '[b][success][b]history clear[/b][/success][/b] - очищает список сохраненных команд.'
+                self.add_message(_text)
             elif cmd_name in self._command_list:
                 for help_line in self._extends_command[cmd_name].help:
                     self.add_message(help_line)
@@ -573,6 +707,12 @@ class WCConsole(QWidget):
                     self.help(args)
                 else:
                     self.help(cmd_name)
+            # история команд
+            elif cmd_name == 'history':
+                if len_cmd > 1 and args[0] == 'clear':
+                    self.clear_history()
+                else:
+                    self.get_history()
             # конманды добавленные расширением
             elif cmd_name in self._command_list:
                 cmd_object = self._extends_command[cmd_name]
