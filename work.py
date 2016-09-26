@@ -5,14 +5,14 @@
 Рабочие функции
 """
 
+import ctypes
+
+
 __date__ = "15.04.2016"
 __author__ = "WorldCount"
 __email__ = "world.count@yandex.ru"
 __copyright__ = "Copyright 2016, Scr1pt1k.Ru"
 __python_version__ = "3"
-
-
-import ctypes
 
 _dll = ctypes.windll.LoadLibrary("user32.dll")
 

@@ -5,17 +5,17 @@
 Виджеты
 """
 
+import win32api
+from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel, QStyleOption, QStyle)
+from PyQt5.QtGui import (QPainter, QPen)
+from PyQt5.QtCore import (Qt, QTimer)
+
+
 __date__ = "14.04.2016"
 __author__ = "WorldCount"
 __email__ = "world.count@yandex.ru"
 __copyright__ = "Copyright 2016, Scr1pt1k.Ru"
 __python_version__ = ""
-
-
-import win32api
-from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel, QStyleOption, QStyle)
-from PyQt5.QtGui import (QPainter, QPen)
-from PyQt5.QtCore import (Qt, QTimer)
 
 
 # Класс: надпись
@@ -70,10 +70,11 @@ class WCFlagUserKeyboard(QLabel):
         self.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
         self.setText(self.get_flag())
 
+    # Метод: обновляет флаг
     def update_flag(self):
         self.setText(self.get_flag())
 
-    # Метод: обновляет флаг
+    # Метод: возвращает флаг
     def get_flag(self):
         flag = 'XX'
         if self.lang == 67699721:
@@ -147,6 +148,7 @@ class WCWidget(QWidget):
         painter = QPainter()
         painter.begin(self)
         self.style().drawPrimitive(QStyle.PE_Widget, opt, painter, self)
+
 
 # Класс: прогрессбар
 class WCProgressBar(QProgressBar):

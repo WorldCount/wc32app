@@ -5,12 +5,6 @@
 Консоль
 """
 
-__date__ = "15.04.2016"
-__author__ = "WorldCount"
-__email__ = "world.count@yandex.ru"
-__copyright__ = "Copyright 2016, Scr1pt1k.Ru"
-__python_version__ = "3"
-
 
 import os
 import datetime
@@ -23,6 +17,13 @@ from .wcedits import WCLineEdit
 from .wcextends import (WCClearExtend, SystemExtend)
 from .wccommands import (WCClearCommand, PrintCommand, DateTimeCommand, HostCommand)
 import win32api
+
+
+__date__ = "15.04.2016"
+__author__ = "WorldCount"
+__email__ = "world.count@yandex.ru"
+__copyright__ = "Copyright 2016, Scr1pt1k.Ru"
+__python_version__ = "3"
 
 
 # Класс: часть команды
@@ -99,7 +100,6 @@ class CommandModel(QAbstractItemModel):
     def headerData(self, section, orientation, role=None):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self.rootItem.data(section)
-
         return None
 
     def index(self, row, column, parent=None, *args, **kwargs):
@@ -181,7 +181,6 @@ class CommandModel(QAbstractItemModel):
 
 # Класс: автозавершение команд
 class WCCommandCompleter(QCompleter):
-
     def splitPath(self, path):
         return path.split(' ')
 
@@ -196,7 +195,6 @@ class WCCommandCompleter(QCompleter):
 
 # Класс: командная строка
 class WCCommandLine(QLineEdit):
-
     """
     Класс дисплея консоли
     @author WorldCount
@@ -302,7 +300,7 @@ history
         index = self._completer.currentIndex()
         self._completer.popup().setCurrentIndex(index)
         start = self._completer.currentRow()
-        if not  self._completer.setCurrentRow(start + 1):
+        if not self._completer.setCurrentRow(start + 1):
             self._completer.setCurrentRow(0)
 
     # Обработчик: нажатие клавиш
@@ -359,7 +357,6 @@ history
 
 # Класс: панель дисплея
 class WCDisplayPanel(WCWidget):
-
     """
     Класс панели дисплея консоли
     @author WorldCount
@@ -419,16 +416,16 @@ class WCDisplayPanel(WCWidget):
 
     # Метод: поиск по тексту
     def run_search(self):
-        if self._display == None:
+        if self._display is None:
             return
 
-        self._max_data = None
-        self._current_select = 0
-        self._first_select = True
+        # self._max_data = None
+        # self._current_select = 0
+        # self._first_select = True
 
         text = self.search.text()
         self._search_data = self._display.search(text)
-        data_size = len(self._search_data)
+        # data_size = len(self._search_data)
 
         self._display.set_select_all(self._search_data)
 
@@ -442,7 +439,6 @@ class WCDisplayPanel(WCWidget):
 
 # Класс: дисплей
 class WCDisplay(QTextEdit):
-
     """
     Класс дисплея консоли
     @author WorldCount
@@ -563,7 +559,7 @@ class WCDisplay(QTextEdit):
 
     # Метод: сбрасывает шрифт к начальным значениям
     def reset_font(self):
-        if not self._default_font_size is None:
+        if self._default_font_size is not None:
             self.set_font_size(self._default_font_size)
 
     # Метод: устанавливает значение начального размера шрифта
@@ -708,7 +704,6 @@ class WCDisplay(QTextEdit):
 
 # Класс: консоль
 class WCConsole(QWidget):
-
     """
     Класс консоли
     @author WorldCount
@@ -775,7 +770,7 @@ class WCConsole(QWidget):
         self.add_command(cmd_print)
         self.add_command(cmd_date)
         self.add_command(cmd_host)
-        #self.remove_command(cmd_print)
+        # self.remove_command(cmd_print)
 
     # Конструктор: слушатели
     def _init_connect(self):

@@ -5,12 +5,6 @@
 Всплывающие сообщения
 """
 
-__date__ = "12.04.2016"
-__author__ = "WorldCount"
-__email__ = "world.count@yandex.ru"
-__copyright__ = "Copyright 2016, Scr1pt1k.Ru"
-__python_version__ = "3"
-
 
 import os
 import sys
@@ -20,6 +14,13 @@ from PyQt5.QtCore import (Qt, QTimer, QSize)
 from PyQt5.QtGui import (QPixmap, QPalette, QBrush)
 from PyQt5.QtMultimedia import QSound
 from .wcbuttons import WCPushButton
+
+
+__date__ = "12.04.2016"
+__author__ = "WorldCount"
+__email__ = "world.count@yandex.ru"
+__copyright__ = "Copyright 2016, Scr1pt1k.Ru"
+__python_version__ = "3"
 
 
 # Виды иконок для WCToolTipMessages
