@@ -2,7 +2,9 @@
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;
     line-height: 1.42857143;
-    color: #333;
+    color: #333333;
+    selection-background-color: #3a3f44;
+    selection-color: #ffffff;
 }
 
 WCPushButton, WCPushButton:hover, WCPushButton:pressed {
@@ -18,6 +20,10 @@ WCPushButton, WCPushButton:hover, WCPushButton:pressed {
     padding: 6px 12px;
     white-space: nowrap;
     vertical-align: middle;
+}
+
+WCPushButton{
+    color: #555555;
 }
 
 WCPushButton:hover {
@@ -124,13 +130,19 @@ WCStatusButton #status[checked=true] {
 WCStatusButton #text[checked=true] {
 }
 
+WCMessageBoxTimer {
+    background-color: #fff;
+    color: #555555;
+    border: 1px solid #cccccc;
+}
+
 WCMessageBoxTimer #image {
-    border: 2px solid #272b30;
+    border: 1px solid #cccccc;
 }
 
 WCMessageBoxTimer #message {
     font-size: 18px;
-    color: #272b30;
+    color: #555555;
 }
 
 WCMessageBoxTimer #timer {
@@ -158,14 +170,14 @@ WCToolTipMessagesGrass #text {
     color: #ffffff;
 }
 
-WCLineEdit, WCLineEdit:disabled, WCCommandLine, WCDisplay, WCLabel {
+WCLineEdit, WCLineEdit:disabled, WCCommandLine, WCDisplay, WCLabel, WCClearLabel {
     text-transform: none;
     text-indent: 0;
     text-align: start;
     border: 1px solid #cccccc;
     line-height: 1.42857143;
     color: #555555;
-    background-color: #fff;
+    background-color: #ffffff;
     font-size: 14px;
     font-family: inherit;
     font-weight: 400;
@@ -177,7 +189,7 @@ WCLineEdit, WCLineEdit:disabled, WCCommandLine, WCDisplay, WCLabel {
     vertical-align: middle;
 }
 
-WCLineEdit:disabled, WCCommandLine:disabled, WCDisplay:disabled, WCLabel:disabled {
+WCLineEdit:disabled, WCCommandLine:disabled, WCDisplay:disabled, WCLabel:disabled, WCClearLabel:disabled {
     background-color: #e6e6e6;
     color: gray;
 }
@@ -200,8 +212,58 @@ WCProgressBar[half=true] {
     color: #cccccc;
 }
 
+WCDisplayPanel {
+    background-color: #ffffff;
+    color: #555555;
+    font-weight: bold;
+    border: 1px solid #cccccc;
+    border-bottom: none;
+    padding: 2px 2px 2px 2px;
+}
+
+WCDisplayPanel WCLineEdit:focus{
+
+}
+
+WCDisplay #menu {
+    background-color: #fff;
+    color: #555555;
+    border: 1px solid #cccccc;
+}
+
+WCDisplay #menu::item{
+    min-height: 30px;
+    min-width: 100px;
+    background-color: transparent;
+    padding: 2px 5px 2px 40px;
+    border: none;
+}
+
+WCDisplay #menu::item:selected{
+    background-color: #3a3f44;
+    color: #ffffff;
+}
+
+WCDisplay #menu::separator{
+    height: 1px;
+    background-color: #bebebe;
+}
+
+WCDisplay #menu::icon{
+    padding: 2px 10px 2px 5px;
+    border: none;
+}
+
 WCConsole WCCommandLine {
     border-top: 0;
+}
+
+WCClearLabel {
+    border: none;
+    background-color: transparent;
+    color: #555555;
+    font-weight: bold;
+    padding: 2px 2px 2px 2px;
 }
 
 WCFlagUserKeyboard {
@@ -211,7 +273,7 @@ WCFlagUserKeyboard {
     border: 1px solid #cccccc;
     line-height: 1.42857143;
     color: #555555;
-    background-color: #fff;
+    background-color: #ffffff;
     font-size: 14px;
     font-family: inherit;
     font-weight: 400;

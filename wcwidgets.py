@@ -13,7 +13,7 @@ __python_version__ = ""
 
 
 import win32api
-from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel)
+from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel, QStyleOption, QStyle)
 from PyQt5.QtGui import (QPainter, QPen)
 from PyQt5.QtCore import (Qt, QTimer)
 
@@ -31,6 +31,20 @@ class WCLabel(QLabel):
     # Конструктор
     def __init__(self, *args):
         super(WCLabel, self).__init__(*args)
+
+
+# Класс: надпись
+class WCClearLabel(QLabel):
+    """
+    Класс надписи на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/07/07
+    """
+
+    # Конструктор
+    def __init__(self, *args):
+        super(WCClearLabel, self).__init__(*args)
 
 
 # Класс: флаг с раскладкой клавиатуры
@@ -111,6 +125,28 @@ class WCFontExample(QWidget):
         self.draw(event, painter)
         painter.end()
 
+
+# Класс: пустой виджет
+class WCWidget(QWidget):
+
+    """
+    Класс пустого виджета на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/07/07
+    """
+
+    # Конструктор
+    def __init__(self, parent):
+        super(WCWidget, self).__init__(parent)
+
+    # Обработчик: отрисовывает виджет
+    def paintEvent(self, event):
+        opt = QStyleOption(QStyleOption.Version)
+        opt.initFrom(self)
+        painter = QPainter()
+        painter.begin(self)
+        self.style().drawPrimitive(QStyle.PE_Widget, opt, painter, self)
 
 # Класс: прогрессбар
 class WCProgressBar(QProgressBar):

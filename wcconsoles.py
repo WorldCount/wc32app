@@ -14,10 +14,12 @@ __python_version__ = "3"
 
 import os
 import datetime
-from PyQt5.QtWidgets import (QWidget, QTextEdit, QLineEdit, QVBoxLayout, QHBoxLayout, QCompleter)
-from PyQt5.QtGui import (QIcon)
-from PyQt5.QtCore import (Qt, pyqtSignal, QStringListModel, QEvent, QAbstractItemModel, QModelIndex)
-from .wcwidgets import WCFlagUserKeyboard
+from PyQt5.QtWidgets import (QWidget, QTextEdit, QLineEdit, QVBoxLayout, QHBoxLayout, QCompleter, QLabel)
+from PyQt5.QtGui import (QIcon, QTextCursor, QColor)
+from PyQt5.QtCore import (Qt, pyqtSignal, QEvent, QAbstractItemModel, QModelIndex)
+from .wcwidgets import (WCFlagUserKeyboard, WCWidget, WCClearLabel)
+from .wcbuttons import WCPushButton
+from .wcedits import WCLineEdit
 from .wcextends import (WCClearExtend, SystemExtend)
 from .wccommands import (WCClearCommand, PrintCommand, DateTimeCommand, HostCommand)
 import win32api
@@ -355,6 +357,89 @@ history
         return super(WCCommandLine, self).event(event)
 
 
+# Класс: панель дисплея
+class WCDisplayPanel(WCWidget):
+
+    """
+    Класс панели дисплея консоли
+    @author WorldCount
+    @version 4
+    @date 2016/07/07
+    """
+
+    # Конструктор
+    def __init__(self, parent):
+        super(WCDisplayPanel, self).__init__(parent)
+        self._parent = parent
+        self._path = os.path.dirname(__file__)
+        # Связь с дисплеем
+        self._display = None
+        # Найденные элементы через поиск
+        self._search_data = []
+        # Инициализация
+        self._init_ui()
+        self._init_widget()
+        self._init_connect()
+
+    # Конструктор: компоненты виджета
+    def _init_ui(self):
+        self.setFixedHeight(40)
+
+    # Конструктор: компоненты виджета
+    def _init_widget(self):
+        hbox = QHBoxLayout()
+        hbox.setContentsMargins(5, 0, 0, 0)
+
+        self.search = WCLineEdit(self)
+        self.search.setPlaceholderText('Поиск...')
+        self.search.setFixedWidth(140)
+        self.search.setFixedHeight(32)
+        self.btn_search = WCPushButton('Искать')
+        self.btn_search.setFixedHeight(32)
+        hbox.addWidget(self.search)
+        hbox.addWidget(self.btn_search)
+        hbox.addStretch()
+        self.setLayout(hbox)
+
+        # Переопределяем обработчки клика по полю
+        self.search.mousePressEvent = lambda x: self.search.selectAll()
+
+    # Конструктор: слушатели
+    def _init_connect(self):
+        self.btn_search.clicked.connect(self.run_search)
+
+    # Метод: связывает панель с дисплеем
+    def binding(self, display):
+        if isinstance(display, WCDisplay):
+            self._display = display
+
+    # Метод: отвязывает дисплей от панели
+    def unbinding(self):
+        self._display = None
+
+    # Метод: поиск по тексту
+    def run_search(self):
+        if self._display == None:
+            return
+
+        self._max_data = None
+        self._current_select = 0
+        self._first_select = True
+
+        text = self.search.text()
+        self._search_data = self._display.search(text)
+        data_size = len(self._search_data)
+
+        self._display.set_select_all(self._search_data)
+
+    # Обработчик: нажатие клавиш
+    def keyPressEvent(self, event):
+        if self.focusWidget() == self.search and (event.key() in [16777220, 16777221]):
+            self.run_search()
+
+        QWidget.keyPressEvent(self, event)
+
+
 # Класс: дисплей
 class WCDisplay(QTextEdit):
 
@@ -364,6 +449,9 @@ class WCDisplay(QTextEdit):
     @version 4
     @date 2016/04/15
     """
+
+    # Сигнал: изменение шрифта
+    font_change = pyqtSignal(int)
 
     # Виды сообщений
     _ERROR = 1
@@ -377,6 +465,8 @@ class WCDisplay(QTextEdit):
         super(WCDisplay, self).__init__(parent)
         self._parent = parent
         self._path = os.path.dirname(__file__)
+        # Шрифт по умолчанию
+        self._default_font_size = None
         self._styles = {}
         self._open_tags = {}
         self._close_tags = {}
@@ -387,8 +477,8 @@ class WCDisplay(QTextEdit):
     # Конструктор: компоненты виджета
     def _init_ui(self):
         self.setReadOnly(True)
-        sys_extend = SystemExtend()
-        self.add_extend(sys_extend)
+        system_extend = SystemExtend()
+        self.add_extend(system_extend)
 
     # Метод: добавляет стили к общим
     def add_styles(self, styles):
@@ -460,6 +550,85 @@ class WCDisplay(QTextEdit):
     def add_clear_message(self):
         self.append('')
 
+    # Метод: возвращает размер шрифта
+    def get_font_size(self):
+        return self.document().defaultFont().pixelSize()
+
+    # Метод: устанавливает размер шрифта
+    def set_font_size(self, size):
+        font = self.document().defaultFont()
+        font.setPixelSize(size)
+        self.document().setDefaultFont(font)
+        self.font_change.emit(size)
+
+    # Метод: сбрасывает шрифт к начальным значениям
+    def reset_font(self):
+        if not self._default_font_size is None:
+            self.set_font_size(self._default_font_size)
+
+    # Метод: устанавливает значение начального размера шрифта
+    def set_default_font_value(self, size):
+        self._default_font_size = size
+
+    # Метод: увеличивает размер шрифта
+    def zoomIn(self, int_range=1):
+        size = self.get_font_size()
+
+        if self._default_font_size is None:
+            self.set_default_font_value(size)
+
+        if size < 100:
+            self.set_font_size(size + 1)
+
+    # Метод: уменьшает размер шрифта
+    def zoomOut(self, int_range=1):
+        size = self.get_font_size()
+
+        if self._default_font_size is None:
+            self.set_default_font_value(size)
+
+        if size > 1:
+            self.set_font_size(size - 1)
+
+    # Метод: ишет данные в тексте
+    def search(self, text):
+        self.textCursor().clearSelection()
+        self.moveCursor(QTextCursor.Start)
+        data = []
+        color = QColor('#272b30').lighter(130)
+        font_color = QColor('#ffffff')
+
+        while (self.find(text)):
+            section = QTextEdit.ExtraSelection()
+            section.format.setBackground(color)
+            section.format.setForeground(font_color)
+            section.cursor = self.textCursor()
+            data.append(section)
+        self.clear_select()
+        return data
+
+    # Метод: выделяет найденные данные в тексте
+    def set_select_all(self, list_select):
+        self.setExtraSelections(list_select)
+
+    # Метод: выделяет текст
+    def set_select(self, select):
+        self.setTextCursor(select.cursor)
+
+    # Метод: очищает выделение
+    def clear_select(self):
+        cursor = self.textCursor()
+        cursor.clearSelection()
+        self.moveCursor(QTextCursor.End)
+
+    # Метод: очищает все выделения
+    def clear_all_selection(self):
+        cursor = self.textCursor()
+        cursor.select(QTextCursor.Document)
+        section = QTextEdit.ExtraSelection()
+        section.cursor = cursor
+        self.setExtraSelections([section])
+
     # Функция: форматирует сообщение
     def _format_messages(self, message, message_type=None):
         if message_type == self._ERROR:
@@ -508,6 +677,34 @@ class WCDisplay(QTextEdit):
             return True
         return False
 
+    # Обработчик: контекстное меню
+    def contextMenuEvent(self, event):
+        menu = self.createStandardContextMenu()
+        if not menu:
+            return QTextEdit.contextMenuEvent(event)
+
+        menu.setObjectName('menu')
+        actions = menu.actions()
+        for action in actions:
+            action_text = action.text()
+
+            if 'Copy' in action_text:
+                action.setText('Копировать\tCtrl+C')
+            elif 'Select All' in action_text:
+                action.setText('Выделить все\tCtrl+A')
+
+        menu.exec(event.globalPos())
+
+    # Обработчик: колесико мышки
+    def wheelEvent(self, event):
+        if (event.modifiers() & Qt.ControlModifier):
+            delta = event.angleDelta().y()
+            if delta > 0:
+                self.zoomIn(1)
+            else:
+                self.zoomOut(1)
+        event.accept()
+
 
 # Класс: консоль
 class WCConsole(QWidget):
@@ -553,11 +750,15 @@ class WCConsole(QWidget):
         hbox.setSpacing(0)
         # Дисплей
         self.display = WCDisplay(self)
+        # Панель для дисплея
+        self.panel = WCDisplayPanel(self)
+        self.panel.binding(self.display)
         # Строка ввода
         self.cmd_line = WCCommandLine(self)
         # Расскладка
         self.flag = WCFlagUserKeyboard()
         # Раскидываем по слоям
+        vbox.addWidget(self.panel)
         vbox.addWidget(self.display)
         hbox.addWidget(self.cmd_line)
         hbox.addWidget(self.flag)
