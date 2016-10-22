@@ -6,7 +6,7 @@
 """
 
 import win32api
-from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel, QStyleOption, QStyle)
+from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel, QStyleOption, QStyle, QStatusBar, QMenuBar)
 from PyQt5.QtGui import (QPainter, QPen)
 from PyQt5.QtCore import (Qt, QTimer)
 
@@ -246,3 +246,31 @@ class WCProgressBar(QProgressBar):
 
         if current_value < max_value:
             self.set_value(current_value + 1)
+
+
+# Класс: Статусбар
+class WCStatusBar(QStatusBar):
+
+    """
+    Класс статусбара на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/10/22
+    """
+
+    def __init__(self, *args):
+        super(WCStatusBar, self).__init__(*args)
+
+
+# Класс: Менюбар
+class WCMenuBar(QMenuBar):
+
+    """
+    Класс менюбара на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/10/22
+    """
+
+    def __init__(self, *args):
+        super(WCMenuBar, self).__init__(*args)
