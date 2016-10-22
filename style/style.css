@@ -290,3 +290,39 @@ WCConsole WCFlagUserKeyboard {
     border-right: none;
     border-top: none;
 }
+
+WCMenuBar {
+    top: 0;
+    left: 0;
+    background: #f0f0f0;
+    width: 100%;
+    min-height: 23px;
+    border-bottom: 1px solid #bebebe;
+    border-top: 1px solid #bebebe;
+}
+
+WCMenuBar::item {
+    color: #262626;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 400;
+    border: 1px solid #cccccc;
+    border-left: 1px solid #f0f0f0;
+    border-bottom: none;
+    line-height: 1.42857143;
+    text-align: center;
+    margin-bottom: 0;
+    padding: 6px 12px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+WCMenuBar::item:selected {
+    color: #fff;
+    background-color: #272b30;
+    border: 1px solid #272b30;
+}
+
+WCMenuBar::item:pressed {
+    
+}
