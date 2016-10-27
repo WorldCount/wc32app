@@ -7,7 +7,7 @@
 
 import win32api
 from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel, QStyleOption, QStyle, QStatusBar, QMenuBar, QMenu, QAction,
-                             QToolBar)
+                             QToolBar, QLCDNumber, QTabWidget)
 from PyQt5.QtGui import (QPainter, QPen)
 from PyQt5.QtCore import (Qt, QTimer)
 
@@ -298,7 +298,7 @@ class WCAction(QAction):
     Класс экшена на PyQt5
     @author WorldCount
     @version 3
-    @date 2016/10/22
+    @date 2016/10/27
     """
 
     def __init__(self, *args):
@@ -312,8 +312,36 @@ class WCToolbar(QToolBar):
     Класс тулбара на PyQt5
     @author WorldCount
     @version 3
-    @date 2016/10/22
+    @date 2016/10/27
     """
 
     def __init__(self, *args):
         super(WCToolbar, self).__init__(*args)
+
+
+# Класс: Цифровой дисплей
+class WCLCDNumber(QLCDNumber):
+
+    """
+    Класс цифрового дисплея на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/10/27
+    """
+
+    def __init__(self, *args):
+        super(WCLCDNumber, self).__init__(*args)
+
+
+# Класс: Бар с вкладками
+class WCTabWidget(QTabWidget):
+
+    """
+    Класс бара с вкладками на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/10/27
+    """
+
+    def __init__(self, *args):
+        super(WCTabWidget, self).__init__(*args)
