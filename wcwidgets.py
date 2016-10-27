@@ -6,7 +6,7 @@
 """
 
 import win32api
-from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel, QStyleOption, QStyle, QStatusBar, QMenuBar)
+from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel, QStyleOption, QStyle, QStatusBar, QMenuBar, QMenu, QAction)
 from PyQt5.QtGui import (QPainter, QPen)
 from PyQt5.QtCore import (Qt, QTimer)
 
@@ -274,3 +274,31 @@ class WCMenuBar(QMenuBar):
 
     def __init__(self, *args):
         super(WCMenuBar, self).__init__(*args)
+
+
+# Класс: Меню
+class WCMenu(QMenu):
+
+    """
+    Класс меню на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/10/22
+    """
+
+    def __init__(self, *args):
+        super(WCMenu, self).__init__(*args)
+
+
+# Класс: Экшен
+class WCAction(QAction):
+
+    """
+    Класс экшена на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/10/22
+    """
+
+    def __init__(self, *args):
+        super(WCAction, self).__init__(*args)

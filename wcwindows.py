@@ -8,7 +8,7 @@
 import os
 from PyQt5.QtWidgets import (QMainWindow, QDesktopWidget)
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import (Qt, QSettings)
+from PyQt5.QtCore import (Qt, QSettings, qInstallMessageHandler)
 
 
 __date__ = "07.04.2016"
@@ -16,6 +16,10 @@ __author__ = "WorldCount"
 __email__ = "world.count@yandex.ru"
 __copyright__ = "Copyright 2016, Scr1pt1k.Ru"
 __python_version__ = "3"
+
+
+def handler(msg_type, msg_log_context, msg_string):
+    pass
 
 
 # Класс: главное окно
@@ -29,13 +33,17 @@ class WCWindow(QMainWindow):
     """
 
     # Конструктор
-    def __init__(self, parent=None, config_name=None, config_dir=None):
+    def __init__(self, parent=None, config_name=None, config_dir=None, ignore_warning=True):
         super(WCWindow, self).__init__(parent)
         self._parent = parent
         self._path = os.path.dirname(__file__)
         self._config_name = config_name
         self._config_dir = config_dir
         self._name = self.__class__.__name__
+
+        # Игнорирование предупреждений
+        if ignore_warning:
+            qInstallMessageHandler(handler)
 
         # Минимальный размер окна
         self.setMinimumSize(400, 200)
