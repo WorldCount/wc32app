@@ -6,7 +6,8 @@
 """
 
 import win32api
-from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel, QStyleOption, QStyle, QStatusBar, QMenuBar, QMenu, QAction)
+from PyQt5.QtWidgets import (QWidget, QProgressBar, QLabel, QStyleOption, QStyle, QStatusBar, QMenuBar, QMenu, QAction,
+                             QToolBar)
 from PyQt5.QtGui import (QPainter, QPen)
 from PyQt5.QtCore import (Qt, QTimer)
 
@@ -302,3 +303,17 @@ class WCAction(QAction):
 
     def __init__(self, *args):
         super(WCAction, self).__init__(*args)
+
+
+# Класс: Тулбар
+class WCToolbar(QToolBar):
+
+    """
+    Класс тулбара на PyQt5
+    @author WorldCount
+    @version 3
+    @date 2016/10/22
+    """
+
+    def __init__(self, *args):
+        super(WCToolbar, self).__init__(*args)
